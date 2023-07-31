@@ -26,6 +26,8 @@ const (
 	jsonNumberTokenType
 	jsonWhitespaceTokenType
 	jsonColonTokenType
+	jsonCurlyOpenBracketTokenType
+	jsonCurlyClosingBracketTokenType
 )
 
 type token struct {
@@ -77,9 +79,10 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	var state tokenSearchState = initialTokenSearchState
 	var i = start
 
-	var createToken = func(tokenType tokenType) *token {
+	var createFindTokenSuccess = func(tokenType tokenType) findTokenResult {
 		var tokenPayload = payload[start:i]
-		return newToken(tokenType, tokenPayload)
+		var token = newToken(tokenType, tokenPayload)
+		return newFindTokenSuccess(token)
 	}
 
 	for ; i < payloadLen; i++ {
@@ -104,7 +107,11 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case DigitRRT:
 				newState = numberMaybeTokenSearchState
 			case ColonRRT:
-				return newFindTokenSuccess(createToken(jsonColonTokenType))
+				return createFindTokenSuccess(jsonColonTokenType)
+			case CurlyOpenBracketRRT:
+				return createFindTokenSuccess(jsonCurlyOpenBracketTokenType)
+			case CurlyClosingBracketRRT:
+				return createFindTokenSuccess(jsonCurlyClosingBracketTokenType)
 			default:
 				panic("RTT unhandled")
 			}
@@ -120,13 +127,20 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				panic("how")
 			case WhitespaceRRT:
 				tokenSearch.runeOffset = i
-				return newFindTokenSuccess(createToken(jsonNumberTokenType))
+				return createFindTokenSuccess(jsonNumberTokenType)
 			case MinusRRT:
 				return newFindTokenError(e("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
 			case ColonRRT:
-				return newFindTokenError(e("unexpected colon while the number is being parsed"))
+				tokenSearch.runeOffset = i
+				return createFindTokenSuccess(jsonNumberTokenType)
+			case CurlyOpenBracketRRT:
+				tokenSearch.runeOffset = i
+				return createFindTokenSuccess(jsonNumberTokenType)
+			case CurlyClosingBracketRRT:
+				tokenSearch.runeOffset = i
+				return createFindTokenSuccess(jsonNumberTokenType)
 			default:
 				panic("RTT unhandled")
 			}
@@ -138,14 +152,14 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				continue
 			default:
 				tokenSearch.runeOffset = i
-				return newFindTokenSuccess(createToken(jsonWhitespaceTokenType))
+				return createFindTokenSuccess(jsonWhitespaceTokenType)
 			}
 		default:
 			panic("unhandled token search state")
 		}
 	}
 
-	// Loop returned? that's weird. Must've ran out of payload then
+	// Loop finished? that's weird. Must've ran out of payload then
 	tokenSearch.runeOffset = i
 
 	switch state {
@@ -154,9 +168,9 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	case initialTokenSearchState:
 		return newFindTokenSuccess(nil)
 	case numberMaybeTokenSearchState:
-		return newFindTokenSuccess(createToken(jsonNumberTokenType))
+		return createFindTokenSuccess(jsonNumberTokenType)
 	case whitespaceMaybeTokenSearchState:
-		return newFindTokenSuccess(createToken(jsonWhitespaceTokenType))
+		return createFindTokenSuccess(jsonWhitespaceTokenType)
 	default:
 		panic("unhandled token search state")
 	}

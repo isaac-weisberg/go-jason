@@ -10,6 +10,8 @@ const (
 	DigitRRT
 	MinusRRT
 	ColonRRT
+	CurlyOpenBracketRRT
+	CurlyClosingBracketRRT
 )
 
 func isEndOfLine(r rune) bool {
@@ -35,6 +37,14 @@ func newRuneType(r rune) (RecognizedRuneType, error) {
 
 	if r == ':' {
 		return ColonRRT, nil
+	}
+
+	if r == '{' {
+		return CurlyOpenBracketRRT, nil
+	}
+
+	if r == '}' {
+		return CurlyClosingBracketRRT, nil
 	}
 
 	return InvalidoRRT, e("rune type unrecognized %q", r)
