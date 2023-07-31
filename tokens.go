@@ -25,6 +25,7 @@ const (
 	invalidoTokenType tokenType = iota
 	jsonNumberTokenType
 	jsonWhitespaceTokenType
+	jsonColonTokenType
 )
 
 type token struct {
@@ -102,6 +103,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				newState = numberMaybeTokenSearchState
 			case DigitRRT:
 				newState = numberMaybeTokenSearchState
+			case ColonRRT:
+				return newFindTokenSuccess(createToken(jsonColonTokenType))
 			default:
 				panic("RTT unhandled")
 			}
@@ -122,6 +125,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				return newFindTokenError(e("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
+			case ColonRRT:
+				return newFindTokenError(e("unexpected colon while the number is being parsed"))
 			default:
 				panic("RTT unhandled")
 			}

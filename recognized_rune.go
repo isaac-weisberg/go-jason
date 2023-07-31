@@ -9,6 +9,7 @@ const (
 	WhitespaceRRT
 	DigitRRT
 	MinusRRT
+	ColonRRT
 )
 
 func isEndOfLine(r rune) bool {
@@ -30,6 +31,10 @@ func newRuneType(r rune) (RecognizedRuneType, error) {
 
 	if unicode.IsDigit(r) {
 		return DigitRRT, nil
+	}
+
+	if r == ':' {
+		return ColonRRT, nil
 	}
 
 	return InvalidoRRT, e("rune type unrecognized %q", r)
