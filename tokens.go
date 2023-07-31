@@ -47,6 +47,7 @@ type tokenSearchState int
 const (
 	invalidoTokenSearchState tokenSearchState = iota
 	initialTokenSearchState
+	numberSignStartedTokenSearchState
 	numberMaybeTokenSearchState
 	whitespaceMaybeTokenSearchState
 )
@@ -103,14 +104,17 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				newState = whitespaceMaybeTokenSearchState
 			case MinusRRT:
-				newState = numberMaybeTokenSearchState
+				newState = numberSignStartedTokenSearchState
 			case DigitRRT:
 				newState = numberMaybeTokenSearchState
 			case ColonRRT:
+				tokenSearch.runeOffset = i + 1
 				return createFindTokenSuccess(jsonColonTokenType)
 			case CurlyOpenBracketRRT:
+				tokenSearch.runeOffset = i + 1
 				return createFindTokenSuccess(jsonCurlyOpenBracketTokenType)
 			case CurlyClosingBracketRRT:
+				tokenSearch.runeOffset = i + 1
 				return createFindTokenSuccess(jsonCurlyClosingBracketTokenType)
 			default:
 				panic("RTT unhandled")
@@ -121,6 +125,26 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			}
 
 			state = newState
+		case numberSignStartedTokenSearchState:
+			switch runeType {
+			case InvalidoRRT:
+				panic("how")
+			case WhitespaceRRT:
+				return newFindTokenError(e("unexpected whitespace while we've just gotten a minus"))
+			case MinusRRT:
+				return newFindTokenError(e("unexpected second minus while we've already gotten a minus"))
+			case DigitRRT:
+				// 'ery nice
+				state = numberMaybeTokenSearchState
+			case ColonRRT:
+				return newFindTokenError(e("unexpected colon while we've just gotten a minus"))
+			case CurlyOpenBracketRRT:
+				return newFindTokenError(e("unexpected curly closing bracket while we've just gotten a minus"))
+			case CurlyClosingBracketRRT:
+				return newFindTokenError(e("unexpected curly open bracket while we've just gotten a minus"))
+			default:
+				panic("RTT unhandled")
+			}
 		case numberMaybeTokenSearchState:
 			switch runeType {
 			case InvalidoRRT:
@@ -171,6 +195,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		return createFindTokenSuccess(jsonNumberTokenType)
 	case whitespaceMaybeTokenSearchState:
 		return createFindTokenSuccess(jsonWhitespaceTokenType)
+	case numberSignStartedTokenSearchState:
+		return newFindTokenError(e("number was started with a sign, but the payload abruptly ended"))
 	default:
 		panic("unhandled token search state")
 	}
