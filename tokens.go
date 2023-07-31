@@ -216,3 +216,24 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		panic("unhandled token search state")
 	}
 }
+
+func (tokenSearch *tokenSearch) findNonWhitespaceToken() findTokenResult {
+	for {
+		var findTokenResult = tokenSearch.findToken()
+
+		if findTokenResult.err != nil {
+			return findTokenResult
+		}
+
+		if findTokenResult.token == nil {
+			return findTokenResult
+		}
+
+		switch findTokenResult.token.tokenType {
+		case jsonWhitespaceTokenType:
+			continue
+		default:
+			return findTokenResult
+		}
+	}
+}
