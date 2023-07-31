@@ -28,6 +28,7 @@ const (
 	jsonColonTokenType
 	jsonCurlyOpenBracketTokenType
 	jsonCurlyClosingBracketTokenType
+	jsonCommaTokenType
 )
 
 type token struct {
@@ -110,6 +111,10 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		tokenSearch.runeOffset = start + 1
 		var tokenPayload = payload[start : start+1]
 		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload))
+	case CommaRRT:
+		tokenSearch.runeOffset = start + 1
+		var tokenPayload = payload[start : start+1]
+		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload))
 	default:
 		panic("RTT unhandled")
 	}
@@ -157,6 +162,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				return newFindTokenError(e("unexpected curly closing bracket while we've just gotten a minus"))
 			case CurlyClosingBracketRRT:
 				return newFindTokenError(e("unexpected curly open bracket while we've just gotten a minus"))
+			case CommaRRT:
+				return newFindTokenError(e("unexpected comma while we've just gotten a minus"))
 			default:
 				panic("RTT unhandled")
 			}
@@ -175,6 +182,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case CurlyOpenBracketRRT:
 				return createFindTokenSuccess(jsonNumberTokenType)
 			case CurlyClosingBracketRRT:
+				return createFindTokenSuccess(jsonNumberTokenType)
+			case CommaRRT:
 				return createFindTokenSuccess(jsonNumberTokenType)
 			default:
 				panic("RTT unhandled")
@@ -197,17 +206,13 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	switch state {
 	case invalidoTokenSearchState:
 		panic("how")
+	case numberSignStartedTokenSearchState:
+		return newFindTokenError(e("number was started with a sign, but the payload abruptly ended"))
 	case numberMaybeTokenSearchState:
 		return createFindTokenSuccess(jsonNumberTokenType)
 	case whitespaceMaybeTokenSearchState:
 		return createFindTokenSuccess(jsonWhitespaceTokenType)
-	case numberSignStartedTokenSearchState:
-		return newFindTokenError(e("number was started with a sign, but the payload abruptly ended"))
 	default:
 		panic("unhandled token search state")
 	}
-}
-
-type JsonNumberToken struct {
-	payload string
 }
