@@ -46,7 +46,6 @@ type tokenSearchState int
 
 const (
 	invalidoTokenSearchState tokenSearchState = iota
-	initialTokenSearchState
 	numberSignStartedTokenSearchState
 	numberMaybeTokenSearchState
 	whitespaceMaybeTokenSearchState
@@ -77,10 +76,55 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	var payloadLen = tokenSearch.payloadRuneCount
 	var payload = tokenSearch.payload
 
-	var state tokenSearchState = initialTokenSearchState
+	if start < payloadLen {
+		return newFindTokenSuccess(nil)
+	}
+
+	var startRune rune = payload[start]
+	var runeType, err = newRuneType(startRune)
+	if err != nil {
+		return newFindTokenError(w(err, "failed to deteremine rune type"))
+	}
+
+	var state tokenSearchState
+
+	var newState tokenSearchState
+	switch runeType {
+	case InvalidoRRT:
+		panic("how")
+	case WhitespaceRRT:
+		newState = whitespaceMaybeTokenSearchState
+	case MinusRRT:
+		newState = numberSignStartedTokenSearchState
+	case DigitRRT:
+		newState = numberMaybeTokenSearchState
+	case ColonRRT:
+		tokenSearch.runeOffset = start + 1
+		var tokenPayload = payload[start : start+1]
+		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload))
+	case CurlyOpenBracketRRT:
+		tokenSearch.runeOffset = start + 1
+		var tokenPayload = payload[start : start+1]
+		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload))
+	case CurlyClosingBracketRRT:
+		tokenSearch.runeOffset = start + 1
+		var tokenPayload = payload[start : start+1]
+		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload))
+	default:
+		panic("RTT unhandled")
+	}
+
+	if newState == invalidoTokenSearchState {
+		return newFindTokenError(e(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", r)))
+	}
+
+	state = newState
+
 	var i = start
 
 	var createFindTokenSuccess = func(tokenType tokenType) findTokenResult {
+		tokenSearch.runeOffset = i
+
 		var tokenPayload = payload[start:i]
 		var token = newToken(tokenType, tokenPayload)
 		return newFindTokenSuccess(token)
@@ -96,35 +140,6 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		switch state {
 		case invalidoTokenSearchState:
 			panic("how")
-		case initialTokenSearchState:
-			var newState tokenSearchState
-			switch runeType {
-			case InvalidoRRT:
-				panic("how")
-			case WhitespaceRRT:
-				newState = whitespaceMaybeTokenSearchState
-			case MinusRRT:
-				newState = numberSignStartedTokenSearchState
-			case DigitRRT:
-				newState = numberMaybeTokenSearchState
-			case ColonRRT:
-				tokenSearch.runeOffset = i + 1
-				return createFindTokenSuccess(jsonColonTokenType)
-			case CurlyOpenBracketRRT:
-				tokenSearch.runeOffset = i + 1
-				return createFindTokenSuccess(jsonCurlyOpenBracketTokenType)
-			case CurlyClosingBracketRRT:
-				tokenSearch.runeOffset = i + 1
-				return createFindTokenSuccess(jsonCurlyClosingBracketTokenType)
-			default:
-				panic("RTT unhandled")
-			}
-
-			if newState == invalidoTokenSearchState {
-				return newFindTokenError(e(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", r)))
-			}
-
-			state = newState
 		case numberSignStartedTokenSearchState:
 			switch runeType {
 			case InvalidoRRT:
@@ -150,20 +165,16 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case InvalidoRRT:
 				panic("how")
 			case WhitespaceRRT:
-				tokenSearch.runeOffset = i
 				return createFindTokenSuccess(jsonNumberTokenType)
 			case MinusRRT:
 				return newFindTokenError(e("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
 			case ColonRRT:
-				tokenSearch.runeOffset = i
 				return createFindTokenSuccess(jsonNumberTokenType)
 			case CurlyOpenBracketRRT:
-				tokenSearch.runeOffset = i
 				return createFindTokenSuccess(jsonNumberTokenType)
 			case CurlyClosingBracketRRT:
-				tokenSearch.runeOffset = i
 				return createFindTokenSuccess(jsonNumberTokenType)
 			default:
 				panic("RTT unhandled")
@@ -175,7 +186,6 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				continue
 			default:
-				tokenSearch.runeOffset = i
 				return createFindTokenSuccess(jsonWhitespaceTokenType)
 			}
 		default:
@@ -184,13 +194,9 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	}
 
 	// Loop finished? that's weird. Must've ran out of payload then
-	tokenSearch.runeOffset = i
-
 	switch state {
 	case invalidoTokenSearchState:
 		panic("how")
-	case initialTokenSearchState:
-		return newFindTokenSuccess(nil)
 	case numberMaybeTokenSearchState:
 		return createFindTokenSuccess(jsonNumberTokenType)
 	case whitespaceMaybeTokenSearchState:
