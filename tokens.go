@@ -120,7 +120,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	}
 
 	if newState == invalidoTokenSearchState {
-		return newFindTokenError(e(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", r)))
+		return newFindTokenError(e(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", startRune)))
 	}
 
 	state = newState
