@@ -101,6 +101,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 			case PJOGotKeyWaitingForSeparator:
 				// das gud
 
+				// TODOOO NEEDS TO BE IMPLEMENTED NEXT
 			default:
 				panic("unhandled parse obj state")
 			}
