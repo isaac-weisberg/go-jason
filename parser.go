@@ -45,6 +45,7 @@ func parse(jsonString string) (*JsonValueAny, error) {
 	}
 }
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=parseJsonObjectState -output parse_json_object_state_string.go
 type parseJsonObjectState int
 
 const (
@@ -56,6 +57,12 @@ const (
 )
 
 func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObject, error) {
+	var _ = newParseJsonStateChain()
+
+	var state = PJOWaitingForKey
+	var keyValuePairs = newJsonValueObjectKeyValues()
+	var parsedKey *JsonValueAny
+
 	for {
 		var tokenSearchResult = tokenSearch.findNonWhitespaceToken()
 
@@ -63,10 +70,6 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 		if err != nil {
 			return nil, w(err, "token search failed")
 		}
-
-		var state = PJOWaitingForKey
-		var keyValuePairs = newJsonValueObjectKeyValues()
-		var parsedKey *JsonValueAny
 
 		var token = tokenSearchResult.token
 		if token == nil {
@@ -127,7 +130,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 		case jsonColonTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				return nil, e("expected a start of a key, got colon instead")
+				return nil, e("expected a start of a key, got colon instead at loc=%v", token.getStartEndString())
 			case PJOGotKeyWaitingForSeparator:
 				// das gud
 				state = PJOGotKeyAndSeparatorWaitingForValue

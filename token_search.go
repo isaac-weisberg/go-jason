@@ -34,12 +34,20 @@ const (
 type token struct {
 	tokenType tokenType
 	payload   []rune
+	start     int
+	end       int
 }
 
-func newToken(tokenType tokenType, payload []rune) *token {
+func (token *token) getStartEndString() string {
+	return fmt.Sprintf("<%v:%v>", token.start, token.end)
+}
+
+func newToken(tokenType tokenType, payload []rune, start int, end int) *token {
 	return &token{
 		tokenType: tokenType,
 		payload:   payload,
+		start:     start,
+		end:       end,
 	}
 }
 
@@ -104,21 +112,25 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	case DigitRRT:
 		newState = numberMaybeTokenSearchState
 	case ColonRRT:
-		tokenSearch.runeOffset = start + 1
-		var tokenPayload = payload[start : start+1]
-		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload))
+		var end = start + 1
+		tokenSearch.runeOffset = end
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload, start, end))
 	case CurlyOpenBracketRRT:
-		tokenSearch.runeOffset = start + 1
-		var tokenPayload = payload[start : start+1]
-		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload))
+		var end = start + 1
+		tokenSearch.runeOffset = end
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload, start, end))
 	case CurlyClosingBracketRRT:
-		tokenSearch.runeOffset = start + 1
-		var tokenPayload = payload[start : start+1]
-		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload))
+		var end = start + 1
+		tokenSearch.runeOffset = end
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload, start, end))
 	case CommaRRT:
-		tokenSearch.runeOffset = start + 1
-		var tokenPayload = payload[start : start+1]
-		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload))
+		var end = start + 1
+		tokenSearch.runeOffset = end
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
 	default:
 		panic("RTT unhandled")
 	}
@@ -135,7 +147,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		tokenSearch.runeOffset = i
 
 		var tokenPayload = payload[start:i]
-		var token = newToken(tokenType, tokenPayload)
+		var token = newToken(tokenType, tokenPayload, start, i)
 		return newFindTokenSuccess(token)
 	}
 

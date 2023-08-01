@@ -17,7 +17,7 @@ func newJsonValueNumber(payload []rune) JsonValueNumber {
 }
 
 type JsonValueObject struct {
-	values map[JsonValueObjectKey]JsonValueAny
+	keyValues map[JsonValueObjectKey]JsonValueAny
 }
 
 func (jsonValueObject *JsonValueObject) asAny() JsonValueAny {
@@ -28,7 +28,7 @@ func (jsonValueObject *JsonValueObject) asAny() JsonValueAny {
 
 func newJsonValueObject(keyValues map[JsonValueObjectKey]JsonValueAny) JsonValueObject {
 	return JsonValueObject{
-		values: keyValues,
+		keyValues: keyValues,
 	}
 }
 
