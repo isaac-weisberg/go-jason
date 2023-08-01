@@ -30,7 +30,7 @@ func parse(jsonString string) (*JsonValueAny, error) {
 		var parsedObject, err = parseJsonObjectAfterItJustStarted(&tokenSearch)
 
 		if err != nil {
-			return nil, e("parsing root object failed")
+			return nil, w(err, "parsing root object failed")
 		}
 
 		var any = parsedObject.asAny()

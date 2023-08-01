@@ -77,7 +77,11 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	var payloadLen = tokenSearch.payloadRuneCount
 	var payload = tokenSearch.payload
 
-	if start < payloadLen {
+	if start > payloadLen {
+		panic("not supposed to happen")
+	}
+
+	if start == payloadLen {
 		return newFindTokenSuccess(nil)
 	}
 
