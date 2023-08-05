@@ -1,19 +1,24 @@
 package gojason
 
-func Parse(jsonString string) (*JsonValueAny, error) {
+import (
+	"github.com/isaac-weisberg/go-jason/util"
+	"github.com/isaac-weisberg/go-jason/values"
+)
+
+func Parse(jsonString string) (*values.JsonValueAny, error) {
 	tokenSearch := newTokenSearch(jsonString)
 
 	var firstTokenSearchResult = tokenSearch.findNonWhitespaceToken()
 
 	var err = firstTokenSearchResult.err
 	if err != nil {
-		return nil, w(err, "token search failed")
+		return nil, util.W(err, "token search failed")
 	}
 
 	var firstToken = firstTokenSearchResult.token
 
 	if firstToken == nil {
-		return nil, e("haven't found any token in this jsonString")
+		return nil, util.E("haven't found any token in this jsonString")
 	}
 
 	switch firstToken.tokenType {
@@ -24,22 +29,22 @@ func Parse(jsonString string) (*JsonValueAny, error) {
 	case jsonWhitespaceTokenType:
 		panic("I called findNonWhitespaceToken ;)")
 	case jsonColonTokenType:
-		return nil, e("colon can not be the first token in a json")
+		return nil, util.E("colon can not be the first token in a json")
 	case jsonCurlyOpenBracketTokenType:
 		// now we're talking
 		var parsedObject, err = parseJsonObjectAfterItJustStarted(&tokenSearch)
 
 		if err != nil {
-			return nil, w(err, "parsing root object failed")
+			return nil, util.W(err, "parsing root object failed")
 		}
 
-		var any = parsedObject.asAny()
+		var any = parsedObject.AsAny()
 
 		return &any, nil
 	case jsonCurlyClosingBracketTokenType:
-		return nil, e("curly closing bracket can not be the first token in a json")
+		return nil, util.E("curly closing bracket can not be the first token in a json")
 	case jsonCommaTokenType:
-		return nil, e("comma can not be the first token in a json")
+		return nil, util.E("comma can not be the first token in a json")
 	default:
 		panic("unhandled token type")
 	}
@@ -56,34 +61,34 @@ const (
 	PJOWaitingForKeyAfterComma
 )
 
-func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObject, error) {
+func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonValueObject, error) {
 	var _ = newParseJsonStateChain()
 
 	var state = PJOWaitingForKey
-	var keyValuePairs = newJsonValueObjectKeyValues()
-	var parsedKey *JsonValueAny
+	var keyValuePairs = values.NewJsonValueObjectKeyValues(0)
+	var parsedKey *values.JsonValueAny
 
 	for {
 		var tokenSearchResult = tokenSearch.findNonWhitespaceToken()
 
 		var err = tokenSearchResult.err
 		if err != nil {
-			return nil, w(err, "token search failed")
+			return nil, util.W(err, "token search failed")
 		}
 
 		var token = tokenSearchResult.token
 		if token == nil {
 			switch state {
 			case PJOWaitingForKey:
-				return nil, e("unexpected lack of token while waiting for first field in the object")
+				return nil, util.E("unexpected lack of token while waiting for first field in the object")
 			case PJOGotKeyWaitingForSeparator:
-				return nil, e("unexpected lack of token while waiting for separator after key")
+				return nil, util.E("unexpected lack of token while waiting for separator after key")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				return nil, e("unexpected lack of token while waiting for value")
+				return nil, util.E("unexpected lack of token while waiting for value")
 			case PJOGotValueWaitingForCommaOrEnd:
-				return nil, e("unexpected lack of token while waiting for end of object")
+				return nil, util.E("unexpected lack of token while waiting for end of object")
 			case PJOWaitingForKeyAfterComma:
-				return nil, e("unexpected lack of token while waiting for next key after comma")
+				return nil, util.E("unexpected lack of token while waiting for next key after comma")
 			default:
 				panic("unhandle parse json object state")
 			}
@@ -95,15 +100,15 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 		case jsonNumberTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				var numberValue = newJsonValueNumber(token.payload)
-				var anyValue = numberValue.asAny()
+				var numberValue = values.NewJsonValueNumber(token.payload)
+				var anyValue = numberValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator
 			case PJOGotKeyWaitingForSeparator:
-				return nil, e("expected colon, but there was suddenly a number after a key")
+				return nil, util.E("expected colon, but there was suddenly a number after a key")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				var number = newJsonValueNumber(token.payload)
-				var anyValue = number.asAny()
+				var number = values.NewJsonValueNumber(token.payload)
+				var anyValue = number.AsAny()
 
 				var key = parsedKey
 				parsedKey = nil
@@ -116,10 +121,10 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 
 				state = PJOGotValueWaitingForCommaOrEnd
 			case PJOGotValueWaitingForCommaOrEnd:
-				return nil, e("expected comma or curly closing bracket, but got a number")
+				return nil, util.E("expected comma or curly closing bracket, but got a number")
 			case PJOWaitingForKeyAfterComma:
-				var numberValue = newJsonValueNumber(token.payload)
-				var anyValue = numberValue.asAny()
+				var numberValue = values.NewJsonValueNumber(token.payload)
+				var anyValue = numberValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator
 			default:
@@ -130,16 +135,16 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 		case jsonColonTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				return nil, e("expected a start of a key, got colon instead at loc=%v", token.getStartEndString())
+				return nil, util.E("expected a start of a key, got colon instead at loc=%v", token.getStartEndString())
 			case PJOGotKeyWaitingForSeparator:
 				// das gud
 				state = PJOGotKeyAndSeparatorWaitingForValue
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				return nil, e("expected value for key %v, but got a colon", parsedKey)
+				return nil, util.E("expected value for key %v, but got a colon", parsedKey)
 			case PJOGotValueWaitingForCommaOrEnd:
-				return nil, e("expected comma or curly closing bracket, but got colon")
+				return nil, util.E("expected comma or curly closing bracket, but got colon")
 			case PJOWaitingForKeyAfterComma:
-				return nil, e("expected next key after comma, but got colon")
+				return nil, util.E("expected next key after comma, but got colon")
 			default:
 				panic("unhandled parse obj state")
 			}
@@ -150,20 +155,20 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 
 				var object, err = parseJsonObjectAfterItJustStarted(tokenSearch)
 				if err != nil {
-					return nil, w(err, "tried to parse key object, but it failed")
+					return nil, util.W(err, "tried to parse key object, but it failed")
 				}
-				var anyObject = object.asAny()
+				var anyObject = object.AsAny()
 
 				parsedKey = &anyObject
 				state = PJOGotKeyWaitingForSeparator
 			case PJOGotKeyWaitingForSeparator:
-				return nil, e("expected colon, but there was suddenly a new object start")
+				return nil, util.E("expected colon, but there was suddenly a new object start")
 			case PJOGotKeyAndSeparatorWaitingForValue:
 				// the value is object then...
 
 				var object, err = parseJsonObjectAfterItJustStarted(tokenSearch)
 				if err != nil {
-					return nil, w(err, "tried to parse value object, but it failed")
+					return nil, util.W(err, "tried to parse value object, but it failed")
 				}
 
 				var key = parsedKey
@@ -173,21 +178,21 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 					panic("das not supposed to happon")
 				}
 
-				var anyValue = object.asAny()
+				var anyValue = object.AsAny()
 
 				keyValuePairs[*key] = anyValue
 
 				state = PJOGotValueWaitingForCommaOrEnd
 			case PJOGotValueWaitingForCommaOrEnd:
-				return nil, e("expected comma or end of object, but got a curly open bracket")
+				return nil, util.E("expected comma or end of object, but got a curly open bracket")
 			case PJOWaitingForKeyAfterComma:
 				// object as key - interesting
 
 				var object, err = parseJsonObjectAfterItJustStarted(tokenSearch)
 				if err != nil {
-					return nil, w(err, "tried to parse key object after comma, parsing failed")
+					return nil, util.W(err, "tried to parse key object after comma, parsing failed")
 				}
-				var anyObject = object.asAny()
+				var anyObject = object.AsAny()
 
 				parsedKey = &anyObject
 				state = PJOGotKeyWaitingForSeparator
@@ -198,35 +203,35 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*JsonValueObje
 			switch state {
 			case PJOWaitingForKey:
 				// welp
-				var jsonObject = newJsonValueObject(keyValuePairs)
+				var jsonObject = values.NewJsonValueObject(keyValuePairs)
 
 				return &jsonObject, nil
 			case PJOGotKeyWaitingForSeparator:
-				return nil, e("expected colon, but there was suddenly an end of the current object")
+				return nil, util.E("expected colon, but there was suddenly an end of the current object")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				return nil, e("expected value for key %v, but got curly closing bracket", parsedKey)
+				return nil, util.E("expected value for key %v, but got curly closing bracket", parsedKey)
 			case PJOGotValueWaitingForCommaOrEnd:
 				// phew, object ended
-				var object = newJsonValueObject(keyValuePairs)
+				var object = values.NewJsonValueObject(keyValuePairs)
 				return &object, nil
 			case PJOWaitingForKeyAfterComma:
-				return nil, e("expected next key after comma, but got curly closing bracket and object is closing")
+				return nil, util.E("expected next key after comma, but got curly closing bracket and object is closing")
 			default:
 				panic("unhandled parse obj state")
 			}
 		case jsonCommaTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				return nil, e("expected a start of a json object, got a comma")
+				return nil, util.E("expected a start of a json object, got a comma")
 			case PJOGotKeyWaitingForSeparator:
-				return nil, e("expected colon, but there was suddenly a comma")
+				return nil, util.E("expected colon, but there was suddenly a comma")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				return nil, e("expected value for key %v, but got a comma", parsedKey)
+				return nil, util.E("expected value for key %v, but got a comma", parsedKey)
 			case PJOGotValueWaitingForCommaOrEnd:
 				// nice, next
 				state = PJOWaitingForKeyAfterComma
 			case PJOWaitingForKeyAfterComma:
-				return nil, e("expected next key after comma, but got another comma lol")
+				return nil, util.E("expected next key after comma, but got another comma lol")
 			default:
 				panic("unhandled parse obj state")
 			}

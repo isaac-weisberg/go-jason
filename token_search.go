@@ -2,6 +2,8 @@ package gojason
 
 import (
 	"fmt"
+
+	"github.com/isaac-weisberg/go-jason/util"
 )
 
 type tokenSearch struct {
@@ -96,7 +98,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	var startRune rune = payload[start]
 	var runeType, err = newRuneType(startRune)
 	if err != nil {
-		return newFindTokenError(w(err, "failed to deteremine rune type"))
+		return newFindTokenError(util.W(err, "failed to deteremine rune type"))
 	}
 
 	var state tokenSearchState
@@ -136,7 +138,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	}
 
 	if newState == invalidoTokenSearchState {
-		return newFindTokenError(e(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", startRune)))
+		return newFindTokenError(util.E(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", startRune)))
 	}
 
 	state = newState
@@ -155,7 +157,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		var r = payload[i]
 		var runeType, err = newRuneType(r)
 		if err != nil {
-			return newFindTokenError(w(err, "failed to deteremine rune type"))
+			return newFindTokenError(util.W(err, "failed to deteremine rune type"))
 		}
 
 		switch state {
@@ -166,20 +168,20 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case InvalidoRRT:
 				panic("how")
 			case WhitespaceRRT:
-				return newFindTokenError(e("unexpected whitespace while we've just gotten a minus"))
+				return newFindTokenError(util.E("unexpected whitespace while we've just gotten a minus"))
 			case MinusRRT:
-				return newFindTokenError(e("unexpected second minus while we've already gotten a minus"))
+				return newFindTokenError(util.E("unexpected second minus while we've already gotten a minus"))
 			case DigitRRT:
 				// 'ery nice
 				state = numberMaybeTokenSearchState
 			case ColonRRT:
-				return newFindTokenError(e("unexpected colon while we've just gotten a minus"))
+				return newFindTokenError(util.E("unexpected colon while we've just gotten a minus"))
 			case CurlyOpenBracketRRT:
-				return newFindTokenError(e("unexpected curly closing bracket while we've just gotten a minus"))
+				return newFindTokenError(util.E("unexpected curly closing bracket while we've just gotten a minus"))
 			case CurlyClosingBracketRRT:
-				return newFindTokenError(e("unexpected curly open bracket while we've just gotten a minus"))
+				return newFindTokenError(util.E("unexpected curly open bracket while we've just gotten a minus"))
 			case CommaRRT:
-				return newFindTokenError(e("unexpected comma while we've just gotten a minus"))
+				return newFindTokenError(util.E("unexpected comma while we've just gotten a minus"))
 			default:
 				panic("RTT unhandled")
 			}
@@ -190,7 +192,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				return createFindTokenSuccess(jsonNumberTokenType)
 			case MinusRRT:
-				return newFindTokenError(e("unexpected minus while the number is already going"))
+				return newFindTokenError(util.E("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
 			case ColonRRT:
@@ -223,7 +225,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	case invalidoTokenSearchState:
 		panic("how")
 	case numberSignStartedTokenSearchState:
-		return newFindTokenError(e("number was started with a sign, but the payload abruptly ended"))
+		return newFindTokenError(util.E("number was started with a sign, but the payload abruptly ended"))
 	case numberMaybeTokenSearchState:
 		return createFindTokenSuccess(jsonNumberTokenType)
 	case whitespaceMaybeTokenSearchState:

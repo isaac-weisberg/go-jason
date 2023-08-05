@@ -1,6 +1,10 @@
 package gojason
 
-import "unicode"
+import (
+	"unicode"
+
+	"github.com/isaac-weisberg/go-jason/util"
+)
 
 type RecognizedRuneType int
 
@@ -52,5 +56,5 @@ func newRuneType(r rune) (RecognizedRuneType, error) {
 		return CommaRRT, nil
 	}
 
-	return InvalidoRRT, e("rune type unrecognized %q", r)
+	return InvalidoRRT, util.E("rune type unrecognized %q", r)
 }

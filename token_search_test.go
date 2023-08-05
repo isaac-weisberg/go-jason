@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/isaac-weisberg/go-jason/util"
 )
 
 func TestSimpleTokenSearch(t *testing.T) {
@@ -49,7 +51,7 @@ func (tokenSearch *tokenSearch) findAllTokens() ([]token, error) {
 
 		var err = findTokenResult.err
 		if err != nil {
-			return nil, w(err, "find token failed")
+			return nil, util.W(err, "find token failed")
 		}
 
 		var token = findTokenResult.token

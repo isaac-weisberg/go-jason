@@ -1,30 +1,34 @@
 package gojason
 
-import "strings"
+import (
+	"strings"
 
-func (object *JsonValueAny) debugString() string {
-	if object.object != nil {
-		return object.object.debugString()
+	"github.com/isaac-weisberg/go-jason/values"
+)
+
+func debugStringAny(object *values.JsonValueAny) string {
+	if object.Object != nil {
+		return debugStringObject(object.Object)
 	}
 
-	if object.number != nil {
-		return object.number.debugString()
+	if object.Number != nil {
+		return debugStringNumber(object.Number)
 	}
 
 	panic("not possible (theoretically :D)")
 }
 
-func (object *JsonValueObject) debugString() string {
+func debugStringObject(object *values.JsonValueObject) string {
 	var builder strings.Builder
 
 	builder.WriteString("{")
 
-	var kvCount = len(object.keyValues)
+	var kvCount = len(object.KeyValues)
 	var kvIndex = 0
-	for k, v := range object.keyValues {
-		builder.WriteString(k.debugString())
+	for k, v := range object.KeyValues {
+		builder.WriteString(debugStringAny(&k))
 		builder.WriteString(":")
-		builder.WriteString(v.debugString())
+		builder.WriteString(debugStringAny(&v))
 
 		var thisIsNotLastKeyValue = kvIndex != kvCount-1
 		if thisIsNotLastKeyValue {
@@ -37,6 +41,6 @@ func (object *JsonValueObject) debugString() string {
 	return builder.String()
 }
 
-func (number *JsonValueNumber) debugString() string {
-	return string(number.payload)
+func debugStringNumber(number *values.JsonValueNumber) string {
+	return string(number.Payload)
 }
