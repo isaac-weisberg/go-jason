@@ -1,7 +1,7 @@
 package values
 
 type JsonValueNumber struct {
-	Payload []rune
+	Payload []byte
 }
 
 func (jsonValueNumber *JsonValueNumber) AsAny() JsonValueAny {
@@ -11,7 +11,7 @@ func (jsonValueNumber *JsonValueNumber) AsAny() JsonValueAny {
 	}
 }
 
-func NewJsonValueNumber(payload []rune) JsonValueNumber {
+func NewJsonValueNumber(payload []byte) JsonValueNumber {
 	return JsonValueNumber{
 		Payload: payload,
 	}

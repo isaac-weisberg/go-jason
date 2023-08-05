@@ -7,17 +7,16 @@ import (
 )
 
 type tokenSearch struct {
-	payload          []rune
-	payloadRuneCount int
-	runeOffset       int
+	payload          []byte
+	payloadByteCount int
+	byteOffset       int
 }
 
-func newTokenSearch(payload string) tokenSearch {
-	var runes = []rune(payload)
+func newTokenSearch(bytes []byte) tokenSearch {
 	return tokenSearch{
-		payload:          runes,
-		payloadRuneCount: len(runes),
-		runeOffset:       0,
+		payload:          bytes,
+		payloadByteCount: len(bytes),
+		byteOffset:       0,
 	}
 }
 
@@ -35,7 +34,7 @@ const (
 
 type token struct {
 	tokenType tokenType
-	payload   []rune
+	payload   []byte
 	start     int
 	end       int
 }
@@ -44,7 +43,7 @@ func (token *token) getStartEndString() string {
 	return fmt.Sprintf("<%v:%v>", token.start, token.end)
 }
 
-func newToken(tokenType tokenType, payload []rune, start int, end int) *token {
+func newToken(tokenType tokenType, payload []byte, start int, end int) *token {
 	return &token{
 		tokenType: tokenType,
 		payload:   payload,
@@ -83,8 +82,8 @@ func newFindTokenResult(token *token, err error) findTokenResult {
 }
 
 func (tokenSearch *tokenSearch) findToken() findTokenResult {
-	var start = tokenSearch.runeOffset
-	var payloadLen = tokenSearch.payloadRuneCount
+	var start = tokenSearch.byteOffset
+	var payloadLen = tokenSearch.payloadByteCount
 	var payload = tokenSearch.payload
 
 	if start > payloadLen {
@@ -95,16 +94,16 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		return newFindTokenSuccess(nil)
 	}
 
-	var startRune rune = payload[start]
-	var runeType, err = newRuneType(startRune)
+	var startingByte byte = payload[start]
+	var startingByteType, err = newRecognizedByteType(startingByte)
 	if err != nil {
-		return newFindTokenError(util.W(err, "failed to deteremine rune type"))
+		return newFindTokenError(util.W(err, "failed to deteremine byte type"))
 	}
 
 	var state tokenSearchState
 
 	var newState tokenSearchState
-	switch runeType {
+	switch startingByteType {
 	case InvalidoRRT:
 		panic("how")
 	case WhitespaceRRT:
@@ -115,22 +114,22 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		newState = numberMaybeTokenSearchState
 	case ColonRRT:
 		var end = start + 1
-		tokenSearch.runeOffset = end
+		tokenSearch.byteOffset = end
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload, start, end))
 	case CurlyOpenBracketRRT:
 		var end = start + 1
-		tokenSearch.runeOffset = end
+		tokenSearch.byteOffset = end
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload, start, end))
 	case CurlyClosingBracketRRT:
 		var end = start + 1
-		tokenSearch.runeOffset = end
+		tokenSearch.byteOffset = end
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload, start, end))
 	case CommaRRT:
 		var end = start + 1
-		tokenSearch.runeOffset = end
+		tokenSearch.byteOffset = end
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
 	default:
@@ -138,7 +137,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	}
 
 	if newState == invalidoTokenSearchState {
-		return newFindTokenError(util.E(fmt.Sprintf("failed to interpret rune while parsing token rune = %q", startRune)))
+		return newFindTokenError(util.E(fmt.Sprintf("failed to interpret byte while parsing token byte = %q", startingByte)))
 	}
 
 	state = newState
@@ -146,7 +145,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	var i = start
 
 	var createFindTokenSuccess = func(tokenType tokenType) findTokenResult {
-		tokenSearch.runeOffset = i
+		tokenSearch.byteOffset = i
 
 		var tokenPayload = payload[start:i]
 		var token = newToken(tokenType, tokenPayload, start, i)
@@ -155,16 +154,16 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 
 	for ; i < payloadLen; i++ {
 		var r = payload[i]
-		var runeType, err = newRuneType(r)
+		var byteType, err = newRecognizedByteType(r)
 		if err != nil {
-			return newFindTokenError(util.W(err, "failed to deteremine rune type"))
+			return newFindTokenError(util.W(err, "failed to deteremine byte type"))
 		}
 
 		switch state {
 		case invalidoTokenSearchState:
 			panic("how")
 		case numberSignStartedTokenSearchState:
-			switch runeType {
+			switch byteType {
 			case InvalidoRRT:
 				panic("how")
 			case WhitespaceRRT:
@@ -186,7 +185,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				panic("RTT unhandled")
 			}
 		case numberMaybeTokenSearchState:
-			switch runeType {
+			switch byteType {
 			case InvalidoRRT:
 				panic("how")
 			case WhitespaceRRT:
@@ -207,7 +206,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				panic("RTT unhandled")
 			}
 		case whitespaceMaybeTokenSearchState:
-			switch runeType {
+			switch byteType {
 			case InvalidoRRT:
 				panic("no")
 			case WhitespaceRRT:

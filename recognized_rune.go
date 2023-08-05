@@ -1,15 +1,13 @@
 package gojason
 
 import (
-	"unicode"
-
 	"github.com/isaac-weisberg/go-jason/util"
 )
 
-type RecognizedRuneType int
+type RecognizedByteType int
 
 const (
-	InvalidoRRT RecognizedRuneType = iota
+	InvalidoRRT RecognizedByteType = iota // RRT because it was previous called RecognizedRuneType
 	WhitespaceRRT
 	DigitRRT
 	MinusRRT
@@ -19,15 +17,33 @@ const (
 	CommaRRT
 )
 
-func isEndOfLine(r rune) bool {
+func isEndOfLine(r byte) bool {
 	return r == '\n'
 }
 
-func isWhitespace(r rune) bool {
-	return unicode.IsSpace(r) || isEndOfLine(r)
+func isWhitespace(r byte) bool {
+	switch r {
+	case '\n':
+		return true
+	case '\t':
+		return true
+	case ' ':
+		return true
+	case '\r':
+		return true
+	default:
+		return false
+	}
 }
 
-func newRuneType(r rune) (RecognizedRuneType, error) {
+func isDigit(r byte) bool {
+	if '0' <= r && r <= '9' {
+		return true
+	}
+	return false
+}
+
+func newRecognizedByteType(r byte) (RecognizedByteType, error) {
 	if isWhitespace(r) {
 		return WhitespaceRRT, nil
 	}
@@ -36,7 +52,7 @@ func newRuneType(r rune) (RecognizedRuneType, error) {
 		return MinusRRT, nil
 	}
 
-	if unicode.IsDigit(r) {
+	if isDigit(r) {
 		return DigitRRT, nil
 	}
 
@@ -56,5 +72,5 @@ func newRuneType(r rune) (RecognizedRuneType, error) {
 		return CommaRRT, nil
 	}
 
-	return InvalidoRRT, util.E("rune type unrecognized %q", r)
+	return InvalidoRRT, util.E("byte type unrecognized %q", r)
 }
