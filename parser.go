@@ -1,6 +1,6 @@
 package gojason
 
-func parse(jsonString string) (*JsonValueAny, error) {
+func Parse(jsonString string) (*JsonValueAny, error) {
 	tokenSearch := newTokenSearch(jsonString)
 
 	var firstTokenSearchResult = tokenSearch.findNonWhitespaceToken()
