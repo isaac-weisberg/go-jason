@@ -21,7 +21,7 @@ func TestSimpleTokenSearch(t *testing.T) {
 	}
 	`
 
-	var tokenSearch = newTokenSearch(jsonString)
+	var tokenSearch = newTokenSearch([]byte(jsonString))
 
 	var allTokens, err = tokenSearch.findAllTokens()
 	if err != nil {

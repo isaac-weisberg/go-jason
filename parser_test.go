@@ -16,7 +16,7 @@ func TestParseSimpleJson(t *testing.T) {
 	}
 	`
 
-	value, err := Parse(jsonString)
+	value, err := Parse([]byte(jsonString))
 	if err != nil {
 		t.Errorf("parse json failed with error = %v", err.Error())
 	}

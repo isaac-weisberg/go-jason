@@ -10,6 +10,7 @@ type JsonValueAny struct {
 	UnderlyingType JsonValueAnyUnderlyingType
 	Number         *JsonValueNumber
 	Object         *JsonValueObject
+	String         *JsonValueString
 }
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=JsonValueAnyUnderlyingType -output json_types_json_value_any_underlying_type_strings.go
@@ -18,6 +19,7 @@ type JsonValueAnyUnderlyingType int64
 const (
 	JsonValueAnyUnderlyingTypeObject JsonValueAnyUnderlyingType = iota
 	JsonValueAnyUnderlyingTypeNumber
+	JsonValueAnyUnderlyingTypeString
 )
 
 func (valueAny *JsonValueAny) AsObject() (*JsonValueObject, error) {

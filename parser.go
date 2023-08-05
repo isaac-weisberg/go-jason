@@ -5,8 +5,8 @@ import (
 	"github.com/isaac-weisberg/go-jason/values"
 )
 
-func Parse(jsonString string) (*values.JsonValueAny, error) {
-	tokenSearch := newTokenSearch(jsonString)
+func Parse(bytes []byte) (*values.JsonValueAny, error) {
+	tokenSearch := newTokenSearch(bytes)
 
 	var firstTokenSearchResult = tokenSearch.findNonWhitespaceToken()
 
