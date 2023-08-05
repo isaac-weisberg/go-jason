@@ -20,7 +20,7 @@ const (
 	JsonValueAnyUnderlyingTypeNumber
 )
 
-func (valueAny *JsonValueAny) asObject() (*JsonValueObject, error) {
+func (valueAny *JsonValueAny) AsObject() (*JsonValueObject, error) {
 	if valueAny.Object != nil {
 		return valueAny.Object, nil
 	}
