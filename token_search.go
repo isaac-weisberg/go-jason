@@ -30,6 +30,7 @@ const (
 	jsonCurlyOpenBracketTokenType
 	jsonCurlyClosingBracketTokenType
 	jsonCommaTokenType
+	jsonStringTokenType
 )
 
 type token struct {
@@ -59,6 +60,8 @@ const (
 	numberSignStartedTokenSearchState
 	numberMaybeTokenSearchState
 	whitespaceMaybeTokenSearchState
+	stringMaybeTokenSearchState
+	stringMaybeButInsideEscapeSequenceSearchState
 )
 
 type findTokenResult struct {
@@ -132,6 +135,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		tokenSearch.byteOffset = end
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
+	case DoubleQuoteRRT:
+		newState = stringMaybeTokenSearchState
 	default:
 		panic("RTT unhandled")
 	}
@@ -143,14 +148,6 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	state = newState
 
 	var i = start
-
-	var createFindTokenSuccess = func(tokenType tokenType) findTokenResult {
-		tokenSearch.byteOffset = i
-
-		var tokenPayload = payload[start:i]
-		var token = newToken(tokenType, tokenPayload, start, i)
-		return newFindTokenSuccess(token)
-	}
 
 	for ; i < payloadLen; i++ {
 		var r = payload[i]
@@ -181,6 +178,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				return newFindTokenError(util.E("unexpected curly open bracket while we've just gotten a minus"))
 			case CommaRRT:
 				return newFindTokenError(util.E("unexpected comma while we've just gotten a minus"))
+			case DoubleQuoteRRT:
+				return newFindTokenError(util.E("unexpected start of string after a minus, which implies a number"))
 			default:
 				panic("RTT unhandled")
 			}
@@ -188,20 +187,20 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			switch byteType {
 			case InvalidoRRT:
 				panic("how")
-			case WhitespaceRRT:
-				return createFindTokenSuccess(jsonNumberTokenType)
+			case WhitespaceRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT:
+				tokenSearch.byteOffset = i
+				var payloadStart = start
+				var payloadEnd = i
+				var tokenPayload = payload[payloadStart:payloadEnd]
+				var token = newToken(jsonNumberTokenType, tokenPayload, payloadStart, payloadEnd)
+
+				return newFindTokenSuccess(token)
 			case MinusRRT:
 				return newFindTokenError(util.E("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
-			case ColonRRT:
-				return createFindTokenSuccess(jsonNumberTokenType)
-			case CurlyOpenBracketRRT:
-				return createFindTokenSuccess(jsonNumberTokenType)
-			case CurlyClosingBracketRRT:
-				return createFindTokenSuccess(jsonNumberTokenType)
-			case CommaRRT:
-				return createFindTokenSuccess(jsonNumberTokenType)
+			case DoubleQuoteRRT:
+				return newFindTokenError(util.E("unexpected start of string while the number was being tokenized"))
 			default:
 				panic("RTT unhandled")
 			}
@@ -212,8 +211,45 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				continue
 			default:
-				return createFindTokenSuccess(jsonWhitespaceTokenType)
+				tokenSearch.byteOffset = i
+				var payloadStart = start
+				var payloadEnd = i
+				var tokenPayload = payload[payloadStart:payloadEnd]
+				var token = newToken(jsonWhitespaceTokenType, tokenPayload, payloadStart, payloadEnd)
+
+				return newFindTokenSuccess(token)
 			}
+		case stringMaybeTokenSearchState:
+			switch byteType {
+			case InvalidoRRT:
+				panic("how")
+			case WhitespaceRRT:
+				continue
+			case MinusRRT:
+				continue
+			case DigitRRT:
+				continue
+			case ColonRRT:
+				continue
+			case CurlyOpenBracketRRT:
+				continue
+			case CurlyClosingBracketRRT:
+				continue
+			case CommaRRT:
+				continue
+			case DoubleQuoteRRT:
+				tokenSearch.byteOffset = i + 1
+				var payloadStart = start + 1
+				var payloadEnd = i
+				var tokenPayload = payload[payloadStart:payloadEnd]
+				var token = newToken(jsonStringTokenType, tokenPayload, payloadStart, payloadEnd)
+
+				return newFindTokenSuccess(token)
+			default:
+				panic("RTT unhandled")
+			}
+		case stringMaybeButInsideEscapeSequenceSearchState:
+			// Fill
 		default:
 			panic("unhandled token search state")
 		}
@@ -226,9 +262,23 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	case numberSignStartedTokenSearchState:
 		return newFindTokenError(util.E("number was started with a sign, but the payload abruptly ended"))
 	case numberMaybeTokenSearchState:
-		return createFindTokenSuccess(jsonNumberTokenType)
+		tokenSearch.byteOffset = payloadLen
+		var tokenStart = start
+		var tokenEnd = payloadLen
+		var tokenPayload = payload[tokenStart:tokenEnd]
+		var token = newToken(jsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
+
+		return newFindTokenSuccess(token)
 	case whitespaceMaybeTokenSearchState:
-		return createFindTokenSuccess(jsonWhitespaceTokenType)
+		tokenSearch.byteOffset = payloadLen
+		var tokenStart = start
+		var tokenEnd = payloadLen
+		var tokenPayload = payload[tokenStart:tokenEnd]
+		var token = newToken(jsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
+
+		return newFindTokenSuccess(token)
+	case stringMaybeTokenSearchState:
+		return newFindTokenError(util.E("string was started, but it abruptly ended"))
 	default:
 		panic("unhandled token search state")
 	}

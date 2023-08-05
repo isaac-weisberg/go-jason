@@ -15,6 +15,7 @@ const (
 	CurlyOpenBracketRRT
 	CurlyClosingBracketRRT
 	CommaRRT
+	DoubleQuoteRRT
 )
 
 func isEndOfLine(r byte) bool {
@@ -71,6 +72,12 @@ func newRecognizedByteType(r byte) (RecognizedByteType, error) {
 	if r == ',' {
 		return CommaRRT, nil
 	}
+
+	if r == '"' {
+		return DoubleQuoteRRT, nil
+	}
+
+	// Add backslash and all string escape sequences
 
 	return InvalidoRRT, util.E("byte type unrecognized %q", r)
 }
