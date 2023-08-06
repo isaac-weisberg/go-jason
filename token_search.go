@@ -154,7 +154,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		newState = stringMaybeTokenSearchState
 		stringBuilder = &strings.Builder{}
 	case BackwardSlashRRT, AnyOtherByteRRT:
-		return newFindTokenError(util.E("expected a token start, but got a '%+v'", startingByte))
+		return newFindTokenError(util.E("expected a token start, but got a '%+v'", string(startingByte)))
 	default:
 		panic("RTT unhandled")
 	}
@@ -189,7 +189,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				// 'ery nice
 				state = numberMaybeTokenSearchState
 			case ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT:
-				return newFindTokenError(util.E("a number started with a minus, but we got a '%+v'", r))
+				return newFindTokenError(util.E("a number started with a minus, but we got a '%+v'", string(r)))
 			default:
 				panic("RTT unhandled")
 			}
@@ -210,7 +210,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case DigitRRT:
 				continue
 			case DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT:
-				return newFindTokenError(util.E("expected digit, but got %+v", r))
+				return newFindTokenError(util.E("expected digit, but got %+v", string(r)))
 			default:
 				panic("RTT unhandled")
 			}
@@ -238,7 +238,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case DoubleQuoteRRT:
 				var resultingString = stringBuilder.String()
 				tokenSearch.byteOffset = i + 1
-				var payloadStart = start + 1
+				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
 				var token = newTokenString(resultingString, tokenPayload, payloadStart, payloadEnd)
@@ -254,7 +254,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case InvalidoRRT:
 				panic("nope")
 			case WhitespaceRRT, DigitRRT, MinusRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT:
-				return newFindTokenError(util.E("string was ungoing with an escape sequence, but got character %+v after backslash", r))
+				return newFindTokenError(util.E("string was ungoing with an escape sequence, but got character %+v after backslash", string(r)))
 			case DoubleQuoteRRT:
 				stringBuilder.WriteByte('"')
 			case BackwardSlashRRT:

@@ -7,15 +7,26 @@ import (
 )
 
 func debugStringAny(object *values.JsonValueAny) string {
-	if object.Object != nil {
-		return debugStringObject(object.Object)
-	}
-
-	if object.Number != nil {
+	switch object.UnderlyingType {
+	case values.JsonValueAnyUnderlyingTypeNumber:
 		return debugStringNumber(object.Number)
+	case values.JsonValueAnyUnderlyingTypeObject:
+		return debugStringObject(object.Object)
+	case values.JsonValueAnyUnderlyingTypeString:
+		return debugStringString(object.String)
 	}
 
 	panic("not possible (theoretically :D)")
+}
+
+func debugStringString(object *values.JsonValueString) string {
+	var builder strings.Builder
+
+	builder.WriteString("\"")
+	builder.WriteString("object.String")
+	builder.WriteString("\"")
+
+	return builder.String()
 }
 
 func debugStringObject(object *values.JsonValueObject) string {

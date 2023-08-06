@@ -235,6 +235,37 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			default:
 				panic("unhandled parse obj state")
 			}
+		case jsonStringTokenType:
+			switch state {
+			case PJOWaitingForKey:
+				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var anyValue = stringValue.AsAny()
+				parsedKey = &anyValue
+				state = PJOGotKeyWaitingForSeparator
+			case PJOGotKeyWaitingForSeparator:
+				return nil, util.E("expected colon, but there was suddenly a number after a key")
+			case PJOGotKeyAndSeparatorWaitingForValue:
+				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var anyValue = stringValue.AsAny()
+
+				var key = parsedKey
+				parsedKey = nil
+
+				if key == nil {
+					panic("not supposed to happen in this branch")
+				}
+
+				keyValuePairs[*key] = anyValue
+
+				state = PJOGotValueWaitingForCommaOrEnd
+			case PJOGotValueWaitingForCommaOrEnd:
+				return nil, util.E("expected comma or curly closing bracket, but got a number")
+			case PJOWaitingForKeyAfterComma:
+				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var anyValue = stringValue.AsAny()
+				parsedKey = &anyValue
+				state = PJOGotKeyWaitingForSeparator
+			}
 		default:
 			panic("token type unhandled")
 		}
