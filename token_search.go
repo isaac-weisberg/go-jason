@@ -2,6 +2,7 @@ package gojason
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/isaac-weisberg/go-jason/util"
 )
@@ -34,10 +35,11 @@ const (
 )
 
 type token struct {
-	tokenType tokenType
-	payload   []byte
-	start     int
-	end       int
+	tokenType   tokenType
+	payload     []byte
+	start       int
+	end         int
+	stringValue *string
 }
 
 func (token *token) getStartEndString() string {
@@ -46,10 +48,21 @@ func (token *token) getStartEndString() string {
 
 func newToken(tokenType tokenType, payload []byte, start int, end int) *token {
 	return &token{
-		tokenType: tokenType,
-		payload:   payload,
-		start:     start,
-		end:       end,
+		tokenType:   tokenType,
+		payload:     payload,
+		start:       start,
+		end:         end,
+		stringValue: nil,
+	}
+}
+
+func newTokenString(stringValue string, payload []byte, start int, end int) *token {
+	return &token{
+		tokenType:   jsonStringTokenType,
+		payload:     payload,
+		start:       start,
+		end:         end,
+		stringValue: &stringValue,
 	}
 }
 
@@ -105,6 +118,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 
 	var state tokenSearchState
 
+	var stringBuilder *strings.Builder
+
 	var newState tokenSearchState
 	switch startingByteType {
 	case InvalidoRRT:
@@ -137,6 +152,9 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
 	case DoubleQuoteRRT:
 		newState = stringMaybeTokenSearchState
+		stringBuilder = &strings.Builder{}
+	case BackwardSlashRRT, AnyOtherByteRRT:
+		return newFindTokenError(util.E("expected a token start, but got a '%+v'", startingByte))
 	default:
 		panic("RTT unhandled")
 	}
@@ -170,16 +188,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case DigitRRT:
 				// 'ery nice
 				state = numberMaybeTokenSearchState
-			case ColonRRT:
-				return newFindTokenError(util.E("unexpected colon while we've just gotten a minus"))
-			case CurlyOpenBracketRRT:
-				return newFindTokenError(util.E("unexpected curly closing bracket while we've just gotten a minus"))
-			case CurlyClosingBracketRRT:
-				return newFindTokenError(util.E("unexpected curly open bracket while we've just gotten a minus"))
-			case CommaRRT:
-				return newFindTokenError(util.E("unexpected comma while we've just gotten a minus"))
-			case DoubleQuoteRRT:
-				return newFindTokenError(util.E("unexpected start of string after a minus, which implies a number"))
+			case ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT:
+				return newFindTokenError(util.E("a number started with a minus, but we got a '%+v'", r))
 			default:
 				panic("RTT unhandled")
 			}
@@ -199,8 +209,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				return newFindTokenError(util.E("unexpected minus while the number is already going"))
 			case DigitRRT:
 				continue
-			case DoubleQuoteRRT:
-				return newFindTokenError(util.E("unexpected start of string while the number was being tokenized"))
+			case DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT:
+				return newFindTokenError(util.E("expected digit, but got %+v", r))
 			default:
 				panic("RTT unhandled")
 			}
@@ -223,33 +233,33 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			switch byteType {
 			case InvalidoRRT:
 				panic("how")
-			case WhitespaceRRT:
-				continue
-			case MinusRRT:
-				continue
-			case DigitRRT:
-				continue
-			case ColonRRT:
-				continue
-			case CurlyOpenBracketRRT:
-				continue
-			case CurlyClosingBracketRRT:
-				continue
-			case CommaRRT:
-				continue
+			case WhitespaceRRT, MinusRRT, DigitRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT:
+				stringBuilder.WriteByte(r)
 			case DoubleQuoteRRT:
+				var resultingString = stringBuilder.String()
 				tokenSearch.byteOffset = i + 1
 				var payloadStart = start + 1
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
-				var token = newToken(jsonStringTokenType, tokenPayload, payloadStart, payloadEnd)
+				var token = newTokenString(resultingString, tokenPayload, payloadStart, payloadEnd)
 
 				return newFindTokenSuccess(token)
+			case BackwardSlashRRT:
+				state = stringMaybeButInsideEscapeSequenceSearchState
 			default:
 				panic("RTT unhandled")
 			}
 		case stringMaybeButInsideEscapeSequenceSearchState:
-			// Fill
+			switch byteType {
+			case InvalidoRRT:
+				panic("nope")
+			case WhitespaceRRT, DigitRRT, MinusRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT:
+				return newFindTokenError(util.E("string was ungoing with an escape sequence, but got character %+v after backslash", r))
+			case DoubleQuoteRRT:
+				stringBuilder.WriteByte('"')
+			case BackwardSlashRRT:
+				stringBuilder.WriteByte('\\')
+			}
 		default:
 			panic("unhandled token search state")
 		}
@@ -279,6 +289,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		return newFindTokenSuccess(token)
 	case stringMaybeTokenSearchState:
 		return newFindTokenError(util.E("string was started, but it abruptly ended"))
+	case stringMaybeButInsideEscapeSequenceSearchState:
+		return newFindTokenError(util.E("string was started and waiting for escape sequence, but it abrubtly ended"))
 	default:
 		panic("unhandled token search state")
 	}

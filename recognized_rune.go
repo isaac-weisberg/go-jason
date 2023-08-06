@@ -1,9 +1,5 @@
 package gojason
 
-import (
-	"github.com/isaac-weisberg/go-jason/util"
-)
-
 type RecognizedByteType int
 
 const (
@@ -16,6 +12,8 @@ const (
 	CurlyClosingBracketRRT
 	CommaRRT
 	DoubleQuoteRRT
+	BackwardSlashRRT
+	AnyOtherByteRRT
 )
 
 func isEndOfLine(r byte) bool {
@@ -77,7 +75,9 @@ func newRecognizedByteType(r byte) (RecognizedByteType, error) {
 		return DoubleQuoteRRT, nil
 	}
 
-	// Add backslash and all string escape sequences
+	if r == '\\' {
+		return BackwardSlashRRT, nil
+	}
 
-	return InvalidoRRT, util.E("byte type unrecognized %q", r)
+	return AnyOtherByteRRT, nil
 }
