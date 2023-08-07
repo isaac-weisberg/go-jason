@@ -23,7 +23,7 @@ func debugStringString(object *values.JsonValueString) string {
 	var builder strings.Builder
 
 	builder.WriteString("\"")
-	builder.WriteString("object.String")
+	builder.WriteString(object.String)
 	builder.WriteString("\"")
 
 	return builder.String()

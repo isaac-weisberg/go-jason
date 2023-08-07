@@ -26,5 +26,7 @@ func TestParseSimpleJson(t *testing.T) {
 		t.Errorf("parse json failed with error = %v", err.Error())
 	}
 
-	fmt.Println(debugStringAny(value))
+	if value != nil {
+		fmt.Println(debugStringAny(value))
+	}
 }

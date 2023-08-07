@@ -132,22 +132,22 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		newState = numberMaybeTokenSearchState
 	case ColonRRT:
 		var end = start + 1
-		tokenSearch.byteOffset = end
+		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload, start, end))
 	case CurlyOpenBracketRRT:
 		var end = start + 1
-		tokenSearch.byteOffset = end
+		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload, start, end))
 	case CurlyClosingBracketRRT:
 		var end = start + 1
-		tokenSearch.byteOffset = end
+		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload, start, end))
 	case CommaRRT:
 		var end = start + 1
-		tokenSearch.byteOffset = end
+		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
 		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
 	case DoubleQuoteRRT:
@@ -165,7 +165,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 
 	state = newState
 
-	var i = start
+	var i = start + 1
 
 	for ; i < payloadLen; i++ {
 		var r = payload[i]
@@ -198,7 +198,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case InvalidoRRT:
 				panic("how")
 			case WhitespaceRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT:
-				tokenSearch.byteOffset = i
+				tokenSearch.updateByteOffset(i)
 				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
@@ -221,7 +221,8 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				continue
 			default:
-				tokenSearch.byteOffset = i
+				fmt.Printf("Whitespace just ended on %s, writing %v\n", string(r), i)
+				tokenSearch.updateByteOffset(i)
 				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
@@ -237,7 +238,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				stringBuilder.WriteByte(r)
 			case DoubleQuoteRRT:
 				var resultingString = stringBuilder.String()
-				tokenSearch.byteOffset = i + 1
+				tokenSearch.updateByteOffset(i + 1)
 				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
@@ -272,7 +273,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	case numberSignStartedTokenSearchState:
 		return newFindTokenError(util.E("number was started with a sign, but the payload abruptly ended"))
 	case numberMaybeTokenSearchState:
-		tokenSearch.byteOffset = payloadLen
+		tokenSearch.updateByteOffset(payloadLen)
 		var tokenStart = start
 		var tokenEnd = payloadLen
 		var tokenPayload = payload[tokenStart:tokenEnd]
@@ -280,7 +281,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 
 		return newFindTokenSuccess(token)
 	case whitespaceMaybeTokenSearchState:
-		tokenSearch.byteOffset = payloadLen
+		tokenSearch.updateByteOffset(payloadLen)
 		var tokenStart = start
 		var tokenEnd = payloadLen
 		var tokenPayload = payload[tokenStart:tokenEnd]
@@ -294,6 +295,10 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	default:
 		panic("unhandled token search state")
 	}
+}
+
+func (tokenSearch *tokenSearch) updateByteOffset(offset int) {
+	tokenSearch.byteOffset = offset
 }
 
 func (tokenSearch *tokenSearch) findNonWhitespaceToken() findTokenResult {
