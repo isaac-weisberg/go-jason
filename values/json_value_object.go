@@ -23,3 +23,15 @@ type JsonValueObjectKeyValues = map[JsonValueObjectKey]JsonValueAny
 func NewJsonValueObjectKeyValues(cap int64) JsonValueObjectKeyValues {
 	return make(JsonValueObjectKeyValues, cap)
 }
+
+func (jsonValueObject *JsonValueObject) StringKeyedKeyValuesOnly() map[string]JsonValueAny {
+	var stringKV = make(map[string]JsonValueAny, len(jsonValueObject.KeyValues))
+
+	for k, v := range jsonValueObject.KeyValues {
+		if k.String != nil {
+			stringKV[k.String.String] = v
+		}
+	}
+
+	return stringKV
+}
