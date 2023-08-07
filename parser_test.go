@@ -14,7 +14,7 @@ func TestParseSimpleJson(t *testing.T) {
 			90: 35
 		},
 		"something": {
-			"keyarooni": {
+			"keyar\\ooni": {
 				355: "fuck"
 			}
 		}

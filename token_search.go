@@ -221,7 +221,6 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 			case WhitespaceRRT:
 				continue
 			default:
-				fmt.Printf("Whitespace just ended on %s, writing %v\n", string(r), i)
 				tokenSearch.updateByteOffset(i)
 				var payloadStart = start
 				var payloadEnd = i
@@ -260,6 +259,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				stringBuilder.WriteByte('"')
 			case BackwardSlashRRT:
 				stringBuilder.WriteByte('\\')
+				state = stringMaybeTokenSearchState
 			}
 		default:
 			panic("unhandled token search state")
