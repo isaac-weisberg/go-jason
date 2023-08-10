@@ -1,6 +1,6 @@
 //go:build !prod
 
-package gojason
+package parser
 
 import "strings"
 

@@ -1,36 +1,37 @@
-package gojason
+package parser
 
 import (
+	"github.com/isaac-weisberg/go-jason/tokenizer"
 	"github.com/isaac-weisberg/go-jason/util"
 	"github.com/isaac-weisberg/go-jason/values"
 )
 
 func Parse(bytes []byte) (*values.JsonValueAny, error) {
-	tokenSearch := newTokenSearch(bytes)
+	tokenSearch := tokenizer.NewTokenSearch(bytes)
 
-	var firstTokenSearchResult = tokenSearch.findNonWhitespaceToken()
+	var firstTokenSearchResult = tokenSearch.FindNonWhitespaceToken()
 
-	var err = firstTokenSearchResult.err
+	var err = firstTokenSearchResult.Err
 	if err != nil {
 		return nil, util.W(err, "token search failed")
 	}
 
-	var firstToken = firstTokenSearchResult.token
+	var firstToken = firstTokenSearchResult.Token
 
 	if firstToken == nil {
 		return nil, util.E("haven't found any token in this jsonString")
 	}
 
-	switch firstToken.tokenType {
-	case invalidoTokenType:
+	switch firstToken.TokenType {
+	case tokenizer.InvalidoTokenType:
 		panic("what?")
-	case jsonNumberTokenType:
+	case tokenizer.JsonNumberTokenType:
 		panic("sorry, no number top level objects for now")
-	case jsonWhitespaceTokenType:
+	case tokenizer.JsonWhitespaceTokenType:
 		panic("I called findNonWhitespaceToken ;)")
-	case jsonColonTokenType:
+	case tokenizer.JsonColonTokenType:
 		return nil, util.E("colon can not be the first token in a json")
-	case jsonCurlyOpenBracketTokenType:
+	case tokenizer.JsonCurlyOpenBracketTokenType:
 		// now we're talking
 		var parsedObject, err = parseJsonObjectAfterItJustStarted(&tokenSearch)
 
@@ -41,9 +42,9 @@ func Parse(bytes []byte) (*values.JsonValueAny, error) {
 		var any = parsedObject.AsAny()
 
 		return &any, nil
-	case jsonCurlyClosingBracketTokenType:
+	case tokenizer.JsonCurlyClosingBracketTokenType:
 		return nil, util.E("curly closing bracket can not be the first token in a json")
-	case jsonCommaTokenType:
+	case tokenizer.JsonCommaTokenType:
 		return nil, util.E("comma can not be the first token in a json")
 	default:
 		panic("unhandled token type")
@@ -61,7 +62,7 @@ const (
 	PJOWaitingForKeyAfterComma
 )
 
-func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonValueObject, error) {
+func parseJsonObjectAfterItJustStarted(tokenSearch *tokenizer.TokenSearch) (*values.JsonValueObject, error) {
 	var _ = newParseJsonStateChain()
 
 	var state = PJOWaitingForKey
@@ -69,14 +70,14 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 	var parsedKey *values.JsonValueAny
 
 	for {
-		var tokenSearchResult = tokenSearch.findNonWhitespaceToken()
+		var tokenSearchResult = tokenSearch.FindNonWhitespaceToken()
 
-		var err = tokenSearchResult.err
+		var err = tokenSearchResult.Err
 		if err != nil {
 			return nil, util.W(err, "token search failed")
 		}
 
-		var token = tokenSearchResult.token
+		var token = tokenSearchResult.Token
 		if token == nil {
 			switch state {
 			case PJOWaitingForKey:
@@ -94,20 +95,20 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			}
 		}
 
-		switch token.tokenType {
-		case invalidoTokenType:
+		switch token.TokenType {
+		case tokenizer.InvalidoTokenType:
 			panic("noo")
-		case jsonNumberTokenType:
+		case tokenizer.JsonNumberTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				var numberValue = values.NewJsonValueNumber(token.payload)
+				var numberValue = values.NewJsonValueNumber(token.Payload)
 				var anyValue = numberValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator
 			case PJOGotKeyWaitingForSeparator:
 				return nil, util.E("expected colon, but there was suddenly a number after a key")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				var number = values.NewJsonValueNumber(token.payload)
+				var number = values.NewJsonValueNumber(token.Payload)
 				var anyValue = number.AsAny()
 
 				var key = parsedKey
@@ -123,19 +124,19 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			case PJOGotValueWaitingForCommaOrEnd:
 				return nil, util.E("expected comma or curly closing bracket, but got a number")
 			case PJOWaitingForKeyAfterComma:
-				var numberValue = values.NewJsonValueNumber(token.payload)
+				var numberValue = values.NewJsonValueNumber(token.Payload)
 				var anyValue = numberValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator
 			default:
 				panic("unhandled parse obj state")
 			}
-		case jsonWhitespaceTokenType:
+		case tokenizer.JsonWhitespaceTokenType:
 			panic("I said, first non-whitespace, please!")
-		case jsonColonTokenType:
+		case tokenizer.JsonColonTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				return nil, util.E("expected a start of a key, got colon instead at loc=%v", token.getStartEndString())
+				return nil, util.E("expected a start of a key, got colon instead at loc=%v", token.GetStartEndString())
 			case PJOGotKeyWaitingForSeparator:
 				// das gud
 				state = PJOGotKeyAndSeparatorWaitingForValue
@@ -148,7 +149,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			default:
 				panic("unhandled parse obj state")
 			}
-		case jsonCurlyOpenBracketTokenType:
+		case tokenizer.JsonCurlyOpenBracketTokenType:
 			switch state {
 			case PJOWaitingForKey:
 				// object as key - interesting
@@ -199,7 +200,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			default:
 				panic("unhandled parse obj state")
 			}
-		case jsonCurlyClosingBracketTokenType:
+		case tokenizer.JsonCurlyClosingBracketTokenType:
 			switch state {
 			case PJOWaitingForKey:
 				// welp
@@ -219,7 +220,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			default:
 				panic("unhandled parse obj state")
 			}
-		case jsonCommaTokenType:
+		case tokenizer.JsonCommaTokenType:
 			switch state {
 			case PJOWaitingForKey:
 				return nil, util.E("expected a start of a json object, got a comma")
@@ -235,17 +236,17 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			default:
 				panic("unhandled parse obj state")
 			}
-		case jsonStringTokenType:
+		case tokenizer.JsonStringTokenType:
 			switch state {
 			case PJOWaitingForKey:
-				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var stringValue = values.NewJsonValueString(*token.StringValue)
 				var anyValue = stringValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator
 			case PJOGotKeyWaitingForSeparator:
 				return nil, util.E("expected colon, but there was suddenly a number after a key")
 			case PJOGotKeyAndSeparatorWaitingForValue:
-				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var stringValue = values.NewJsonValueString(*token.StringValue)
 				var anyValue = stringValue.AsAny()
 
 				var key = parsedKey
@@ -261,7 +262,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenSearch) (*values.JsonVa
 			case PJOGotValueWaitingForCommaOrEnd:
 				return nil, util.E("expected comma or curly closing bracket, but got a number")
 			case PJOWaitingForKeyAfterComma:
-				var stringValue = values.NewJsonValueString(*token.stringValue)
+				var stringValue = values.NewJsonValueString(*token.StringValue)
 				var anyValue = stringValue.AsAny()
 				parsedKey = &anyValue
 				state = PJOGotKeyWaitingForSeparator

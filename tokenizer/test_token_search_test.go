@@ -1,4 +1,4 @@
-package gojason
+package tokenizer
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=tokenType -output tokentype_string_test.go
 
@@ -26,7 +26,7 @@ func TestSimpleTokenSearch(t *testing.T) {
 	}
 	`
 
-	var tokenSearch = newTokenSearch([]byte(jsonString))
+	var tokenSearch = NewTokenSearch([]byte(jsonString))
 
 	var allTokens, err = tokenSearch.findAllTokens()
 	if err != nil {
@@ -50,18 +50,18 @@ func TestSimpleTokenSearch(t *testing.T) {
 	// fmt.Printf("all token types: \n%v\n", allTokenTypesJoined)
 }
 
-func (tokenSearch *tokenSearch) findAllTokens() ([]token, error) {
-	var tokens = make([]token, 0)
+func (tokenSearch *TokenSearch) findAllTokens() ([]Token, error) {
+	var tokens = make([]Token, 0)
 
 	for {
 		var findTokenResult = tokenSearch.findToken()
 
-		var err = findTokenResult.err
+		var err = findTokenResult.Err
 		if err != nil {
 			return tokens, util.W(err, "find token failed")
 		}
 
-		var token = findTokenResult.token
+		var token = findTokenResult.Token
 
 		if token == nil {
 			return tokens, nil
@@ -71,8 +71,8 @@ func (tokenSearch *tokenSearch) findAllTokens() ([]token, error) {
 	}
 }
 
-func (token token) String() string {
-	return fmt.Sprintf("%v", string(token.payload))
+func (token Token) String() string {
+	return fmt.Sprintf("%v", string(token.Payload))
 }
 
 func sliceMap[I interface{}, O interface{}](arr []I, transform func(I) O) []O {

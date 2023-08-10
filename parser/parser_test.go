@@ -1,4 +1,4 @@
-package gojason
+package parser
 
 import (
 	"fmt"

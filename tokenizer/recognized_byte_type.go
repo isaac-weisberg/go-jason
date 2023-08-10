@@ -1,4 +1,4 @@
-package gojason
+package tokenizer
 
 type RecognizedByteType int
 

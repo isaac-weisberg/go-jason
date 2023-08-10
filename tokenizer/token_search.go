@@ -1,4 +1,4 @@
-package gojason
+package tokenizer
 
 import (
 	"fmt"
@@ -7,62 +7,62 @@ import (
 	"github.com/isaac-weisberg/go-jason/util"
 )
 
-type tokenSearch struct {
-	payload          []byte
-	payloadByteCount int
-	byteOffset       int
+type TokenSearch struct {
+	Payload          []byte
+	PayloadByteCount int
+	ByteOffset       int
 }
 
-func newTokenSearch(bytes []byte) tokenSearch {
-	return tokenSearch{
-		payload:          bytes,
-		payloadByteCount: len(bytes),
-		byteOffset:       0,
+func NewTokenSearch(bytes []byte) TokenSearch {
+	return TokenSearch{
+		Payload:          bytes,
+		PayloadByteCount: len(bytes),
+		ByteOffset:       0,
 	}
 }
 
-type tokenType int
+type TokenType int
 
 const (
-	invalidoTokenType tokenType = iota
-	jsonNumberTokenType
-	jsonWhitespaceTokenType
-	jsonColonTokenType
-	jsonCurlyOpenBracketTokenType
-	jsonCurlyClosingBracketTokenType
-	jsonCommaTokenType
-	jsonStringTokenType
+	InvalidoTokenType TokenType = iota
+	JsonNumberTokenType
+	JsonWhitespaceTokenType
+	JsonColonTokenType
+	JsonCurlyOpenBracketTokenType
+	JsonCurlyClosingBracketTokenType
+	JsonCommaTokenType
+	JsonStringTokenType
 )
 
-type token struct {
-	tokenType   tokenType
-	payload     []byte
-	start       int
-	end         int
-	stringValue *string
+type Token struct {
+	TokenType   TokenType
+	Payload     []byte
+	Start       int
+	End         int
+	StringValue *string
 }
 
-func (token *token) getStartEndString() string {
-	return fmt.Sprintf("<%v:%v>", token.start, token.end)
+func (token *Token) GetStartEndString() string {
+	return fmt.Sprintf("<%v:%v>", token.Start, token.End)
 }
 
-func newToken(tokenType tokenType, payload []byte, start int, end int) *token {
-	return &token{
-		tokenType:   tokenType,
-		payload:     payload,
-		start:       start,
-		end:         end,
-		stringValue: nil,
+func newToken(tokenType TokenType, payload []byte, start int, end int) *Token {
+	return &Token{
+		TokenType:   tokenType,
+		Payload:     payload,
+		Start:       start,
+		End:         end,
+		StringValue: nil,
 	}
 }
 
-func newTokenString(stringValue string, payload []byte, start int, end int) *token {
-	return &token{
-		tokenType:   jsonStringTokenType,
-		payload:     payload,
-		start:       start,
-		end:         end,
-		stringValue: &stringValue,
+func newTokenString(stringValue string, payload []byte, start int, end int) *Token {
+	return &Token{
+		TokenType:   JsonStringTokenType,
+		Payload:     payload,
+		Start:       start,
+		End:         end,
+		StringValue: &stringValue,
 	}
 }
 
@@ -77,30 +77,30 @@ const (
 	stringMaybeButInsideEscapeSequenceSearchState
 )
 
-type findTokenResult struct {
-	token *token
-	err   error
+type FindTokenResult struct {
+	Token *Token
+	Err   error
 }
 
-func newFindTokenSuccess(token *token) findTokenResult {
+func newFindTokenSuccess(token *Token) FindTokenResult {
 	return newFindTokenResult(token, nil)
 }
 
-func newFindTokenError(err error) findTokenResult {
+func newFindTokenError(err error) FindTokenResult {
 	return newFindTokenResult(nil, err)
 }
 
-func newFindTokenResult(token *token, err error) findTokenResult {
-	return findTokenResult{
-		token: token,
-		err:   err,
+func newFindTokenResult(token *Token, err error) FindTokenResult {
+	return FindTokenResult{
+		Token: token,
+		Err:   err,
 	}
 }
 
-func (tokenSearch *tokenSearch) findToken() findTokenResult {
-	var start = tokenSearch.byteOffset
-	var payloadLen = tokenSearch.payloadByteCount
-	var payload = tokenSearch.payload
+func (tokenSearch *TokenSearch) findToken() FindTokenResult {
+	var start = tokenSearch.ByteOffset
+	var payloadLen = tokenSearch.PayloadByteCount
+	var payload = tokenSearch.Payload
 
 	if start > payloadLen {
 		panic("not supposed to happen")
@@ -134,22 +134,22 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		var end = start + 1
 		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
-		return newFindTokenSuccess(newToken(jsonColonTokenType, tokenPayload, start, end))
+		return newFindTokenSuccess(newToken(JsonColonTokenType, tokenPayload, start, end))
 	case CurlyOpenBracketRRT:
 		var end = start + 1
 		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
-		return newFindTokenSuccess(newToken(jsonCurlyOpenBracketTokenType, tokenPayload, start, end))
+		return newFindTokenSuccess(newToken(JsonCurlyOpenBracketTokenType, tokenPayload, start, end))
 	case CurlyClosingBracketRRT:
 		var end = start + 1
 		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
-		return newFindTokenSuccess(newToken(jsonCurlyClosingBracketTokenType, tokenPayload, start, end))
+		return newFindTokenSuccess(newToken(JsonCurlyClosingBracketTokenType, tokenPayload, start, end))
 	case CommaRRT:
 		var end = start + 1
 		tokenSearch.updateByteOffset(end)
 		var tokenPayload = payload[start:end]
-		return newFindTokenSuccess(newToken(jsonCommaTokenType, tokenPayload, start, end))
+		return newFindTokenSuccess(newToken(JsonCommaTokenType, tokenPayload, start, end))
 	case DoubleQuoteRRT:
 		newState = stringMaybeTokenSearchState
 		stringBuilder = &strings.Builder{}
@@ -202,7 +202,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
-				var token = newToken(jsonNumberTokenType, tokenPayload, payloadStart, payloadEnd)
+				var token = newToken(JsonNumberTokenType, tokenPayload, payloadStart, payloadEnd)
 
 				return newFindTokenSuccess(token)
 			case MinusRRT:
@@ -225,7 +225,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 				var payloadStart = start
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
-				var token = newToken(jsonWhitespaceTokenType, tokenPayload, payloadStart, payloadEnd)
+				var token = newToken(JsonWhitespaceTokenType, tokenPayload, payloadStart, payloadEnd)
 
 				return newFindTokenSuccess(token)
 			}
@@ -277,7 +277,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		var tokenStart = start
 		var tokenEnd = payloadLen
 		var tokenPayload = payload[tokenStart:tokenEnd]
-		var token = newToken(jsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
+		var token = newToken(JsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
 
 		return newFindTokenSuccess(token)
 	case whitespaceMaybeTokenSearchState:
@@ -285,7 +285,7 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 		var tokenStart = start
 		var tokenEnd = payloadLen
 		var tokenPayload = payload[tokenStart:tokenEnd]
-		var token = newToken(jsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
+		var token = newToken(JsonNumberTokenType, tokenPayload, tokenStart, tokenEnd)
 
 		return newFindTokenSuccess(token)
 	case stringMaybeTokenSearchState:
@@ -297,24 +297,24 @@ func (tokenSearch *tokenSearch) findToken() findTokenResult {
 	}
 }
 
-func (tokenSearch *tokenSearch) updateByteOffset(offset int) {
-	tokenSearch.byteOffset = offset
+func (tokenSearch *TokenSearch) updateByteOffset(offset int) {
+	tokenSearch.ByteOffset = offset
 }
 
-func (tokenSearch *tokenSearch) findNonWhitespaceToken() findTokenResult {
+func (tokenSearch *TokenSearch) FindNonWhitespaceToken() FindTokenResult {
 	for {
 		var findTokenResult = tokenSearch.findToken()
 
-		if findTokenResult.err != nil {
+		if findTokenResult.Err != nil {
 			return findTokenResult
 		}
 
-		if findTokenResult.token == nil {
+		if findTokenResult.Token == nil {
 			return findTokenResult
 		}
 
-		switch findTokenResult.token.tokenType {
-		case jsonWhitespaceTokenType:
+		switch findTokenResult.Token.TokenType {
+		case JsonWhitespaceTokenType:
 			continue
 		default:
 			return findTokenResult
