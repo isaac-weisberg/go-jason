@@ -21,7 +21,15 @@ func TestSimpleTokenSearch(t *testing.T) {
 		"something": {
 			"keyarooni": {
 				355: "fuck"
-			}
+			},
+			"steven": [
+				"beeven",
+				"heeven",
+				3,
+				{
+					"i said": 3
+				}
+			]
 		}
 	}
 	`
@@ -41,7 +49,7 @@ func TestSimpleTokenSearch(t *testing.T) {
 		// t.Errorf("the resulting tokens sequence is not the same as the source json")
 	}
 
-	// fmt.Printf("find all tokens allTokens = \n%v\n", stringForSlice(allTokens, ""))
+	fmt.Printf("find all tokens allTokens = \n%v\n", stringForSlice(allTokens, ""))
 
 	// var allTokenTypes = sliceMap[token, string](allTokens, func(t token) string {
 	// 	return t.tokenType.String()

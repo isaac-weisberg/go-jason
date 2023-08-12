@@ -14,6 +14,8 @@ const (
 	DoubleQuoteRRT
 	BackwardSlashRRT
 	AnyOtherByteRRT
+	SquareOpenBracketRRT
+	SquareClosingBracketRRT
 )
 
 func isEndOfLine(r byte) bool {
@@ -77,6 +79,14 @@ func newRecognizedByteType(r byte) (RecognizedByteType, error) {
 
 	if r == '\\' {
 		return BackwardSlashRRT, nil
+	}
+
+	if r == '[' {
+		return SquareOpenBracketRRT, nil
+	}
+
+	if r == ']' {
+		return SquareClosingBracketRRT, nil
 	}
 
 	return AnyOtherByteRRT, nil

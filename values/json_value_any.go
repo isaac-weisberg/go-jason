@@ -9,6 +9,7 @@ type JsonValueAny struct {
 	Number         *JsonValueNumber
 	Object         *JsonValueObject
 	String         *JsonValueString
+	Array          *JsonValueArray
 }
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=JsonValueAnyUnderlyingType -output json_types_json_value_any_underlying_type_strings.go
@@ -18,6 +19,7 @@ const (
 	JsonValueAnyUnderlyingTypeObject JsonValueAnyUnderlyingType = iota
 	JsonValueAnyUnderlyingTypeNumber
 	JsonValueAnyUnderlyingTypeString
+	JsonValueAnyUnderlyingTypeArray
 )
 
 const valueInterpretationErrorBaseString = "this value can not be interpreted as an object, it has underlying type of %s"

@@ -32,6 +32,8 @@ const (
 	JsonCurlyClosingBracketTokenType
 	JsonCommaTokenType
 	JsonStringTokenType
+	JsonSquareOpenBracketTokenType
+	JsonSquareClosingBracketTokenType
 )
 
 type Token struct {
@@ -155,6 +157,16 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 		stringBuilder = &strings.Builder{}
 	case BackwardSlashRRT, AnyOtherByteRRT:
 		return newFindTokenError(util.E("expected a token start, but got a '%+v'", string(startingByte)))
+	case SquareOpenBracketRRT:
+		var end = start + 1
+		tokenSearch.updateByteOffset(end)
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(JsonSquareOpenBracketTokenType, tokenPayload, start, end))
+	case SquareClosingBracketRRT:
+		var end = start + 1
+		tokenSearch.updateByteOffset(end)
+		var tokenPayload = payload[start:end]
+		return newFindTokenSuccess(newToken(JsonSquareClosingBracketTokenType, tokenPayload, start, end))
 	default:
 		panic("RTT unhandled")
 	}
@@ -238,7 +250,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 			case DoubleQuoteRRT:
 				var resultingString = stringBuilder.String()
 				tokenSearch.updateByteOffset(i + 1)
-				var payloadStart = start
+				var payloadStart = start + 1
 				var payloadEnd = i
 				var tokenPayload = payload[payloadStart:payloadEnd]
 				var token = newTokenString(resultingString, tokenPayload, payloadStart, payloadEnd)
