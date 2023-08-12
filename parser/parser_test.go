@@ -7,19 +7,27 @@ import (
 
 func TestParseSimpleJson(t *testing.T) {
 	jsonString := `
+{
 	{
-		{
-			35: 60
-		}: {
-			90: 35
+		35: 60
+	}: {
+		90: 35
+	},
+	"something": {
+		"keyarooni": {
+			355: "fuck"
 		},
-		"something": {
-			"keyar\\ooni": {
-				355: "fuck"
+		"steven": [
+			"beeven",
+			"heeven",
+			3,
+			{
+				"i said": 3
 			}
-		}
+		]
 	}
-	`
+}
+`
 
 	value, err := Parse([]byte(jsonString))
 	if err != nil {

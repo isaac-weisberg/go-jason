@@ -1,12 +1,12 @@
 package values
 
 type JsonValueArray struct {
-	values []JsonValueAny
+	Values []JsonValueAny
 }
 
 func NewJsonValueArray(values []JsonValueAny) JsonValueArray {
 	return JsonValueArray{
-		values: values,
+		Values: values,
 	}
 }
 

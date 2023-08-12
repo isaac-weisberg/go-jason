@@ -14,9 +14,31 @@ func debugStringAny(object *values.JsonValueAny) string {
 		return debugStringObject(object.Object)
 	case values.JsonValueAnyUnderlyingTypeString:
 		return debugStringString(object.String)
+	case values.JsonValueAnyUnderlyingTypeArray:
+		return debugStringArray(object.Array)
 	}
 
 	panic("not possible (theoretically :D)")
+}
+
+func debugStringArray(array *values.JsonValueArray) string {
+	var builder strings.Builder
+
+	builder.WriteByte('[')
+
+	var lastValueIndex = len(array.Values) - 1
+	for index, value := range array.Values {
+		builder.WriteString(debugStringAny(&value))
+
+		var notTheLastItem = index != lastValueIndex
+		if notTheLastItem {
+			builder.WriteString(", ")
+		}
+	}
+
+	builder.WriteByte(']')
+
+	return builder.String()
 }
 
 func debugStringString(object *values.JsonValueString) string {

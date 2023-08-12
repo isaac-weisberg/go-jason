@@ -12,27 +12,27 @@ import (
 
 func TestSimpleTokenSearch(t *testing.T) {
 	jsonString := `
+{
 	{
-		{
-			35: 60
-		}: {
-			90: 35
+		35: 60
+	}: {
+		90: 35
+	},
+	"something": {
+		"keyarooni": {
+			355: "fuck"
 		},
-		"something": {
-			"keyarooni": {
-				355: "fuck"
-			},
-			"steven": [
-				"beeven",
-				"heeven",
-				3,
-				{
-					"i said": 3
-				}
-			]
-		}
+		"steven": [
+			"beeven",
+			"heeven",
+			3,
+			{
+				"i said": 3
+			}
+		]
 	}
-	`
+}
+`
 
 	var tokenSearch = NewTokenSearch([]byte(jsonString))
 
