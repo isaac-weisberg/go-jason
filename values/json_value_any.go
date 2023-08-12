@@ -44,3 +44,10 @@ func (valueAny *JsonValueAny) AsNumber() (*JsonValueNumber, error) {
 	}
 	return nil, util.E(valueInterpretationErrorBaseString, valueAny.UnderlyingType.String())
 }
+
+func (valueAny *JsonValueAny) AsArray() (*JsonValueArray, error) {
+	if valueAny.Array != nil {
+		return valueAny.Array, nil
+	}
+	return nil, util.E(valueInterpretationErrorBaseString, valueAny.UnderlyingType.String())
+}
