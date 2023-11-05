@@ -269,6 +269,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 				return newFindTokenError(util.E("string was ungoing with an escape sequence, but got character %+v after backslash", string(r)))
 			case DoubleQuoteRRT:
 				stringBuilder.WriteByte('"')
+				state = stringMaybeTokenSearchState
 			case BackwardSlashRRT:
 				stringBuilder.WriteByte('\\')
 				state = stringMaybeTokenSearchState
