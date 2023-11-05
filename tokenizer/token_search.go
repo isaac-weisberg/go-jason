@@ -200,7 +200,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 			case DigitRRT:
 				// 'ery nice
 				state = numberMaybeTokenSearchState
-			case ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT:
+			case ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, DoubleQuoteRRT, BackwardSlashRRT, AnyOtherByteRRT, SquareOpenBracketRRT, SquareClosingBracketRRT:
 				return newFindTokenError(util.E("a number started with a minus, but we got a '%+v'", string(r)))
 			default:
 				panic("RTT unhandled")
@@ -209,7 +209,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 			switch byteType {
 			case InvalidoRRT:
 				panic("how")
-			case WhitespaceRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT:
+			case WhitespaceRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, SquareOpenBracketRRT, SquareClosingBracketRRT:
 				tokenSearch.updateByteOffset(i)
 				var payloadStart = start
 				var payloadEnd = i
@@ -245,7 +245,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 			switch byteType {
 			case InvalidoRRT:
 				panic("how")
-			case WhitespaceRRT, MinusRRT, DigitRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT:
+			case WhitespaceRRT, MinusRRT, DigitRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT, SquareOpenBracketRRT, SquareClosingBracketRRT:
 				stringBuilder.WriteByte(r)
 			case DoubleQuoteRRT:
 				var resultingString = stringBuilder.String()
@@ -265,7 +265,7 @@ func (tokenSearch *TokenSearch) findToken() FindTokenResult {
 			switch byteType {
 			case InvalidoRRT:
 				panic("nope")
-			case WhitespaceRRT, DigitRRT, MinusRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT:
+			case WhitespaceRRT, DigitRRT, MinusRRT, ColonRRT, CurlyOpenBracketRRT, CurlyClosingBracketRRT, CommaRRT, AnyOtherByteRRT, SquareOpenBracketRRT, SquareClosingBracketRRT:
 				return newFindTokenError(util.E("string was ungoing with an escape sequence, but got character %+v after backslash", string(r)))
 			case DoubleQuoteRRT:
 				stringBuilder.WriteByte('"')

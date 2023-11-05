@@ -19,7 +19,7 @@ func TestSimpleTokenSearch(t *testing.T) {
 		90: 35
 	},
 	"something": {
-		"keyarooni": {
+		"keya[r]o(o)n\ni": {
 			355: "fuck"
 		},
 		"steven": [
