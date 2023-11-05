@@ -26,7 +26,9 @@ func Parse(bytes []byte) (*values.JsonValueAny, error) {
 	case tokenizer.InvalidoTokenType:
 		panic("what?")
 	case tokenizer.JsonNumberTokenType:
-		panic("sorry, no number top level objects for now")
+		numberValue := values.NewJsonValueNumber(firstToken.Payload)
+		any := numberValue.AsAny()
+		return &any, nil
 	case tokenizer.JsonWhitespaceTokenType:
 		panic("I called findNonWhitespaceToken ;)")
 	case tokenizer.JsonColonTokenType:
@@ -46,6 +48,10 @@ func Parse(bytes []byte) (*values.JsonValueAny, error) {
 		return nil, util.E("curly closing bracket can not be the first token in a json")
 	case tokenizer.JsonCommaTokenType:
 		return nil, util.E("comma can not be the first token in a json")
+	case tokenizer.JsonStringTokenType:
+		stringValue := values.NewJsonValueString(*firstToken.StringValue)
+		var any = stringValue.AsAny()
+		return &any, nil
 	case tokenizer.JsonSquareOpenBracketTokenType:
 		return nil, util.E("root arrays are not supported at the time")
 	case tokenizer.JsonSquareClosingBracketTokenType:
