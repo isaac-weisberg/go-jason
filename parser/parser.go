@@ -290,7 +290,7 @@ func parseJsonObjectAfterItJustStarted(tokenSearch *tokenizer.TokenSearch) (*val
 
 				arrayValue, err := parseArrayAfterItJustStarted(tokenSearch)
 				if err != nil {
-					return nil, util.W(err, "failed to parse an array value for key")
+					return nil, util.J(err, util.E("failed to parse an array value for key `%v`", debugStringAny(parsedKey)))
 				}
 				var anyValue = arrayValue.AsAny()
 
