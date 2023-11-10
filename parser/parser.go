@@ -382,7 +382,7 @@ func parseArrayAfterItJustStarted(tokenSearch *tokenizer.TokenSearch) (*values.J
 			case PAWaitingForFirstValueOrEnd, PAWaitingForNextValue:
 				parsedObject, err := parseJsonObjectAfterItJustStarted(tokenSearch)
 				if err != nil {
-					return nil, util.W(err, "parsing an object for an array value failed")
+					return nil, util.J(err, util.E("parsing an object for an array value failed at index `%v`", len(arrayValueBuffer)))
 				}
 				var anyValue = parsedObject.AsAny()
 
